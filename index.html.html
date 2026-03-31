@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Питание">
+<title>План питания</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#f0f2f5;--card:#fff;--text:#1c1e2a;--muted:#8890a4;--border:#e4e7ee;
+  --gym:#e05a35;--kb:#2d6be4;--run:#1a9e5c;--rest:#7b859a;--nav-h:60px;
+  --green:#1a9e5c;
+}
+html,body{height:100%;overflow:hidden;font-family:'Nunito','Segoe UI',sans-serif;font-size:13px;color:var(--text);background:var(--bg);}
+body{display:flex;flex-direction:column;}
+.screen{display:none;flex:1;overflow-y:auto;padding:12px 10px calc(var(--nav-h) + 12px);}
+.screen.active{display:block;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
+.app-title{font-size:16px;font-weight:900;letter-spacing:-0.3px;}
+.app-sub{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px;}
+.week-tabs{display:flex;gap:3px;}
+.wtab{font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;padding:4px 11px;border-radius:20px;border:none;background:var(--card);color:var(--muted);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:all .15s;}
+.wtab.active{background:var(--text);color:#fff;}
+
+/* DAY ROW */
+.day-row{display:grid;grid-template-columns:62px 1fr;margin-bottom:4px;}
+.day-label{display:flex;flex-direction:column;align-items:center;padding:8px 2px;}
+.day-name{font-size:19px;font-weight:900;letter-spacing:-0.5px;line-height:1;}
+.day-badge{font-size:7.5px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:10px;margin-top:4px;white-space:nowrap;}
+.day-total{font-size:9.5px;font-weight:700;color:var(--muted);padding:8px 0 4px 2px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.meals-strip{display:flex;gap:4px;flex-wrap:wrap;padding-bottom:4px;}
+
+/* MEAL CARD */
+.meal-card{
+  background:var(--card);border-radius:9px;padding:7px 9px;
+  min-width:100px;max-width:140px;flex:1;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);border:1.5px solid var(--border);
+  cursor:pointer;transition:border-color .15s, box-shadow .15s, opacity .15s;
+  position:relative;
+}
+.meal-card:active{transform:scale(0.98);}
+.meal-card.protein{background:#eef4ff;border-color:#bcd4f7;}
+.meal-card.eaten{
+  border-color:#1a9e5c !important;
+  box-shadow:0 0 0 1.5px #1a9e5c22;
+}
+.meal-card.eaten .mc-name{color:#8890a4;text-decoration:line-through;}
+.meal-card.eaten .mc-detail{color:#b0b8c8;}
+
+/* Checkmark badge top-right */
+.mc-check{
+  position:absolute;top:6px;right:6px;
+  width:18px;height:18px;border-radius:50%;
+  border:1.5px solid #d0d4de;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.meal-card.eaten .mc-check{
+  background:var(--green);border-color:var(--green);
+}
+
+.mc-time{font-size:13px;font-weight:900;letter-spacing:-.5px;line-height:1;margin-bottom:1px;padding-right:22px;}
+.mc-time.blue{color:var(--kb);}
+.mc-slot{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;}
+.mc-icon{font-size:14px;margin-bottom:1px;display:block;}
+.mc-name{font-size:11px;font-weight:700;line-height:1.2;margin-bottom:2px;transition:color .15s;}
+.mc-detail{font-size:9.5px;color:var(--muted);font-weight:600;line-height:1.3;margin-bottom:4px;transition:color .15s;}
+.mc-chips{display:flex;gap:3px;flex-wrap:wrap;}
+.chip{font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:5px;}
+.chip-kcal{background:#f3f4f6;color:#60697d;}
+.chip-prot{background:#fff0ec;color:var(--gym);}
+.divider{height:1px;background:var(--border);margin:2px 0 8px;}
+
+/* Day progress dots */
+.day-progress{display:flex;gap:3px;align-items:center;margin-left:4px;flex-wrap:wrap;}
+.dp-dot{width:5px;height:5px;border-radius:50%;background:#e4e7ee;transition:background .2s;}
+.dp-dot.on{background:var(--green);}
+
+/* GROCERY */
+.g-cat-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px;padding-left:2px;}
+.g-cat-box{border-radius:11px;overflow:hidden;margin-bottom:10px;}
+.g-row{display:flex;align-items:center;gap:9px;padding:8px 11px;cursor:pointer;transition:opacity .2s;}
+.g-row.done{opacity:.4;}
+.g-row+.g-row{border-top:1px solid var(--border);}
+.check-box{width:17px;height:17px;border-radius:5px;border:2px solid #d0d4de;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;transition:all .15s;}
+.check-box.on{background:var(--text);border-color:var(--text);}
+.g-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.g-info{flex:1;}
+.g-name{font-weight:700;font-size:12px;}
+.g-note{font-size:9.5px;color:var(--muted);margin-top:1px;}
+.g-qty{font-weight:800;font-size:11.5px;white-space:nowrap;}
+.progress-bar{background:var(--border);border-radius:8px;height:4px;margin-bottom:14px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:8px;background:var(--text);transition:width .3s;}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--muted);transition:color .15s;}
+.nav-btn.active{color:var(--text);}
+.nav-icon{font-size:21px;line-height:1;}
+.nav-label{font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;}
+</style>
+</head>
+<body>
+
+<!-- MEAL SCREEN -->
+<div class="screen active" id="screen-meal">
+  <div class="topbar">
+    <div><div class="app-title">🥗 План питания</div><div class="app-sub" id="meal-sub">Кирилл · 46 л · Братислава</div></div>
+    <div class="week-tabs" id="meal-tabs"></div>
+  </div>
+  <div id="meal-main"></div>
+</div>
+
+<!-- GROCERY SCREEN -->
+<div class="screen" id="screen-grocery">
+  <div class="topbar">
+    <div><div class="app-title">🛒 Список покупок</div><div class="app-sub" id="grocery-sub">Кирилл · Братислава</div></div>
+    <div class="week-tabs" id="grocery-tabs"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div id="grocery-main"></div>
+  <div style="margin-top:6px;padding:9px 12px;border-radius:9px;background:#fff;border:1.5px solid var(--border);font-size:10px;color:var(--muted);font-weight:600;line-height:1.5;">💡 <strong style="color:var(--text)">Постоянно в запасе</strong> — корица, масло, соль, перец, чеснок не включены.</div>
+</div>
+
+<!-- NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-meal" onclick="switchTab('meal')"><span class="nav-icon">🥗</span><span class="nav-label">Питание</span></button>
+  <button class="nav-btn" id="nav-grocery" onclick="switchTab('grocery')"><span class="nav-icon">🛒</span><span class="nav-label">Покупки</span></button>
+</nav>
+
+<script>
+// ── NAV ──
+function switchTab(t){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+t).classList.add('active');
+  document.getElementById('nav-'+t).classList.add('active');
+}
+
+// ── DATA ──
+const DAYS=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
+const DAY_TYPE={ПН:'gym',ВТ:'kb',СР:'gym',ЧТ:'kb',ПТ:'gym',СБ:'run',ВС:'rest'};
+const WORKOUT={
+  ПН:{icon:'🏋',text:'17:30 · Зал — грудь/трицепс'},
+  ВТ:{icon:'🔔',text:'Натощак · Гиря — разминка'},
+  СР:{icon:'🏋',text:'17:30 · Зал — спина/бицепс'},
+  ЧТ:{icon:'🔔',text:'Натощак · Гиря — разминка'},
+  ПТ:{icon:'🏋',text:'08:30 · Зал — ноги/плечи'},
+  СБ:{icon:'🏃',text:'09:00 · Бег 30 мин + Сауна'},
+  ВС:{icon:'💤',text:'Отдых · восстановление'},
+};
+const DAY_BADGE={gym:'ЗАЛ',kb:'ГИРЯ',run:'БЕГ',rest:'ОТДЫХ'};
+const DC={gym:{a:'#e05a35',b:'#fde4db'},kb:{a:'#2d6be4',b:'#d6e4ff'},run:{a:'#1a9e5c',b:'#c8f0da'},rest:{a:'#7b859a',b:'#e2e5eb'}};
+const SL={'08:00':'До бега','08:30':'Завтрак','09:30':'После зала','09:00':'После гири','10:00':'После бега','11:00':'Перекус','13:00':'Обед','13:30':'Обед','16:00':'Пред-тренир','16:30':'Перекус','19:30':'Ужин','20:00':'После зала','21:30':'Казеин'};
+const MI={'Завтрак':'🌅','До бега':'☕','После бега':'💪','После зала':'💪','После гири':'💪','Перекус':'🥜','Обед':'🍽','Пред-тренир':'⚡','Ужин':'🌙','Казеин':'😴'};
+
+const M={1:{ПН:[{t:'08:30',n:'Овсянка + яйца скрамбл',d:'60г овсянки, 3 яйца, авокадо ½',k:480,p:28},{t:'11:00',n:'Миндаль + яблоко',d:'25г миндаля, 1 яблоко',k:195,p:5},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса, огурец',k:490,p:38},{t:'16:00',n:'Банан + хлебцы',d:'1 банан, 2 хлебца',k:280,p:6},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Гречка + овощи',d:'120г гречки, тушёные овощи',k:300,p:8},{t:'21:30',n:'Творог + Zott Pudding',d:'150г творога + ½ пудинга',k:230,p:30}],ВТ:[{t:'08:30',n:'Яичница + авокадо',d:'3 яйца, ½ авокадо, хлеб',k:420,p:25},{t:'11:00',n:'Греческий йогурт',d:'200г 2%, ягоды, чиа',k:180,p:18},{t:'13:30',n:'Тунец Rio Mare + булгур',d:'1 банка, 120г булгура',k:460,p:38},{t:'16:30',n:'Яблоко + орехи',d:'1 яблоко, 20г грецких орехов',k:200,p:4},{t:'19:30',n:'Куриная грудка + овощи',d:'200г гриль, шпинат',k:390,p:48},{t:'21:30',n:'Творог',d:'200г, ½ ч.л. мёда',k:190,p:28}],СР:[{t:'08:30',n:'Протеиновые панкейки',d:'2 яйца, 40г протеина, банан',k:450,p:38},{t:'11:00',n:'Хлебцы + творог',d:'3 хлебца, 80г',k:190,p:16},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса, зелень',k:490,p:38},{t:'16:00',n:'Банан',d:'1 банан — пред-тренировочные углеводы',k:100,p:1},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Лосось + гречка',d:'150г лосося, 100г гречки',k:460,p:42},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ЧТ:[{t:'08:30',n:'Омлет + авокадо',d:'3 яйца, шпинат, ½ авокадо',k:430,p:27},{t:'11:00',n:'Греческий йогурт',d:'150г, мёд, грецкие орехи',k:200,p:16},{t:'13:30',n:'Чечевичный суп + тунец',d:'300мл, ½ банки Rio Mare',k:450,p:34},{t:'16:30',n:'Хлебцы + авокадо',d:'3 хлебца, ½ авокадо',k:210,p:5},{t:'19:30',n:'Тунец в рассоле + овощи',d:'1 банка, запечённые овощи',k:360,p:40},{t:'21:30',n:'Творог',d:'200г, корица, орехи',k:200,p:28}],ПТ:[{t:'08:30',n:'Банан перед залом',d:'1 банан — быстрые углеводы',k:100,p:1},{t:'09:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'11:00',n:'Яйца вкрутую + авокадо',d:'3 яйца, ½ авокадо',k:300,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:30',n:'Хлебцы + миндаль',d:'3 хлебца, 25г',k:200,p:6},{t:'19:30',n:'Куриная грудка + салат',d:'200г гриль, листовой',k:380,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],СБ:[{t:'08:00',n:'Банан + кофе',d:'1 банан, чёрный кофе',k:100,p:1},{t:'10:00',n:'Протеин после бега',d:'1 порция на воде — ~30 мин после пробежки',k:130,p:26},{t:'11:00',n:'Авокадо-тост + яйца',d:'Цельнозерн. тост, ½ авокадо, 2 яйца',k:320,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 120г риса',k:460,p:36},{t:'16:30',n:'Греческий йогурт + ягоды',d:'200г, мёд',k:200,p:18},{t:'19:30',n:'Лосось + брокколи',d:'180г, брокколи, цуккини',k:420,p:42},{t:'21:30',n:'Творог',d:'200г, корица',k:190,p:28}],ВС:[{t:'08:30',n:'Яйца + авокадо + тост',d:'3 яйца, ½ авокадо, ржаной хлеб',k:460,p:26},{t:'13:00',n:'Рёбрышки + гречка',d:'250г рёбер, 120г гречки',k:620,p:42},{t:'16:00',n:'Орехи + яблоко',d:'Миндаль 25г',k:210,p:7},{t:'19:30',n:'Тунец в рассоле + овощи',d:'1 банка, кабачок и перец',k:340,p:38},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:250,p:31}]},2:{ПН:[{t:'08:30',n:'Овсянка + яйца',d:'60г, 3 яйца, ½ авокадо, кофе',k:480,p:28},{t:'11:00',n:'Кешью + яблоко',d:'20г кешью, 1 яблоко',k:180,p:4},{t:'13:30',n:'Тунец Rio Mare + булгур',d:'1 банка, 120г булгура',k:470,p:38},{t:'16:00',n:'Банан + хлебцы',d:'1 банан, 2 хлебца',k:280,p:6},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Куриная грудка + гречка',d:'200г гриль, 120г гречки',k:450,p:50},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ВТ:[{t:'08:30',n:'Омлет + авокадо',d:'3 яйца, помидор, ½ авокадо',k:420,p:25},{t:'11:00',n:'Греческий йогурт + черника',d:'200г',k:175,p:18},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:30',n:'Яблоко + орехи',d:'1 яблоко, 15г грецких',k:185,p:3},{t:'19:30',n:'Лосось + брокколи',d:'180г, 250г брокколи',k:420,p:44},{t:'21:30',n:'Творог',d:'200г, корица',k:190,p:28}],СР:[{t:'08:30',n:'Протеиновые панкейки',d:'2 яйца, 40г протеина, черника',k:450,p:38},{t:'11:00',n:'Хлебцы + яйца',d:'3 хлебца, 2 яйца вкрутую',k:220,p:17},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:00',n:'Банан',d:'1 банан',k:100,p:1},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Говядина + гречка',d:'180г постной, 100г гречки',k:470,p:46},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ЧТ:[{t:'08:30',n:'Яйца + авокадо',d:'3 скрамбл, ½ авокадо, тост',k:440,p:27},{t:'11:00',n:'Йогурт + миндаль',d:'150г, 15г',k:200,p:17},{t:'13:30',n:'Чечевичный суп + тунец',d:'300мл, ½ банки Rio Mare',k:440,p:36},{t:'16:30',n:'Хлебцы + авокадо',d:'3 хлебца, ½ авокадо',k:200,p:4},{t:'19:30',n:'Тунец в рассоле + кабачки',d:'1 банка',k:360,p:40},{t:'21:30',n:'Творог',d:'200г, пара кешью',k:200,p:28}],ПТ:[{t:'08:30',n:'Банан перед залом',d:'1 банан',k:100,p:1},{t:'09:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'11:00',n:'Яйца + авокадо',d:'3 вкрутую, ½ авокадо',k:290,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:30',n:'Хлебцы + творог',d:'3 хлебца, 80г',k:190,p:16},{t:'19:30',n:'Куриная грудка + шпинат',d:'200г, тушёный шпинат',k:380,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],СБ:[{t:'08:00',n:'Банан + кофе',d:'1 банан, чёрный кофе',k:100,p:1},{t:'10:00',n:'Протеин после бега',d:'1 порция на воде — ~30 мин после пробежки',k:130,p:26},{t:'11:00',n:'Авокадо-тост + яйца',d:'Цельнозерн. тост, ½ авокадо, 2 яйца',k:320,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 120г риса',k:460,p:36},{t:'16:30',n:'Йогурт + черника/малина',d:'200г',k:190,p:18},{t:'19:30',n:'Рёбрышки + кукуруза',d:'220г рёбер, 50г кукурузы',k:520,p:38},{t:'21:30',n:'Творог',d:'200г, орехи 10г',k:210,p:28}],ВС:[{t:'08:30',n:'Яйца + тост + авокадо',d:'3 яйца, ½ авокадо, ржаной',k:460,p:26},{t:'13:00',n:'Рёбрышки + рис',d:'250г рёбер, 120г риса',k:640,p:44},{t:'16:00',n:'Грецкие орехи + груша',d:'25г орехов',k:210,p:6},{t:'19:30',n:'Тунец в рассоле + кабачки',d:'1 банка',k:330,p:38},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:250,p:31}]},3:{ПН:[{t:'08:30',n:'Овсянка + яйца + малина',d:'60г, 3 яйца, ½ авокадо, малина',k:490,p:29},{t:'11:00',n:'Миндаль + яблоко',d:'20г миндаля, 1 яблоко',k:185,p:4},{t:'13:30',n:'Тунец Rio Mare + гречка',d:'1 банка, 120г гречки',k:470,p:38},{t:'16:00',n:'Банан + хлебцы',d:'1 банан, 2 хлебца',k:220,p:4},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Куриная грудка + рис',d:'200г гриль, 120г риса',k:450,p:52},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ВТ:[{t:'08:30',n:'Яичница + авокадо',d:'3 яйца, ½ авокадо, ржаной',k:430,p:26},{t:'11:00',n:'Греческий йогурт + ягоды',d:'200г, 50г',k:185,p:18},{t:'13:30',n:'Тунец Rio Mare + булгур',d:'1 банка, 120г булгура',k:470,p:38},{t:'16:30',n:'Яблоко + орехи',d:'1 яблоко, 15г грецких',k:185,p:3},{t:'19:30',n:'Лосось + цуккини',d:'180г, запечённые цуккини',k:420,p:44},{t:'21:30',n:'Творог',d:'200г, корица, мёд',k:200,p:28}],СР:[{t:'08:30',n:'Протеиновые панкейки',d:'2 яйца, 40г протеина, овсянка',k:450,p:38},{t:'11:00',n:'Хлебцы + творог',d:'3 хлебца, 80г',k:200,p:17},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:00',n:'Банан',d:'1 банан',k:100,p:1},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Говядина + гречка',d:'180г, 110г гречки, шпинат',k:480,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ЧТ:[{t:'08:30',n:'Омлет + авокадо',d:'3 яйца, шпинат, ½ авокадо',k:430,p:27},{t:'11:00',n:'Йогурт + миндаль',d:'150г, 15г',k:200,p:17},{t:'13:30',n:'Чечевичный суп + тунец',d:'300мл, ½ банки Rio Mare',k:440,p:35},{t:'16:30',n:'Хлебцы + авокадо',d:'3 хлебца, ½ авокадо',k:200,p:4},{t:'19:30',n:'Тунец в рассоле + баклажан',d:'1 банка, баклажан и перец',k:340,p:40},{t:'21:30',n:'Творог',d:'200г, грецкие орехи',k:200,p:28}],ПТ:[{t:'08:30',n:'Банан перед залом',d:'1 банан',k:100,p:1},{t:'09:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'11:00',n:'Яйца + авокадо',d:'3 вкрутую, ½ авокадо',k:300,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:30',n:'Хлебцы + миндаль',d:'3 хлебца, 20г',k:190,p:6},{t:'19:30',n:'Куриная грудка + шпинат',d:'200г гриль, чеснок',k:380,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],СБ:[{t:'08:00',n:'Банан + кофе',d:'1 банан, чёрный кофе',k:100,p:1},{t:'10:00',n:'Протеин после бега',d:'1 порция на воде — ~30 мин после пробежки',k:130,p:26},{t:'11:00',n:'Авокадо-тост + яйца',d:'Цельнозерн. тост, ½ авокадо, 2 яйца',k:320,p:20},{t:'13:30',n:'Тунец Rio Mare + булгур',d:'1 банка, 120г булгура',k:460,p:36},{t:'16:30',n:'Греческий йогурт + малина',d:'200г',k:185,p:18},{t:'19:30',n:'Лосось + запечённые овощи',d:'180г, брокколи, цуккини',k:430,p:44},{t:'21:30',n:'Творог',d:'200г, корица',k:190,p:28}],ВС:[{t:'08:30',n:'Яйца + тост + авокадо',d:'3 яйца, ½ авокадо, ржаной',k:460,p:26},{t:'13:00',n:'Рёбрышки + гречка',d:'250г, 120г гречки, кукуруза',k:650,p:44},{t:'16:00',n:'Орехи + яблоко',d:'Грецкие орехи 25г',k:210,p:6},{t:'19:30',n:'Тунец в рассоле + салат',d:'1 банка, листовой, масло',k:320,p:38},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:250,p:31}]},4:{ПН:[{t:'08:30',n:'Овсянка + яйца',d:'60г, 3 яйца, ½ авокадо',k:480,p:28},{t:'11:00',n:'Миндаль + яблоко',d:'20г миндаля, 1 яблоко',k:185,p:4},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:00',n:'Банан + хлебцы',d:'1 банан, 2 хлебца',k:280,p:6},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Лосось + рис',d:'180г, 120г риса, шпинат',k:470,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ВТ:[{t:'08:30',n:'Омлет + авокадо',d:'3 яйца, шпинат, ½ авокадо',k:435,p:26},{t:'11:00',n:'Греческий йогурт + черника',d:'200г, 50г',k:185,p:18},{t:'13:30',n:'Тунец Rio Mare + гречка',d:'1 банка, 120г гречки',k:470,p:38},{t:'16:30',n:'Яблоко + орехи',d:'1 яблоко, 15г грецких',k:185,p:3},{t:'19:30',n:'Куриная грудка + овощи',d:'200г гриль, перец баклажан',k:390,p:48},{t:'21:30',n:'Творог',d:'200г, корица, орехи',k:200,p:28}],СР:[{t:'08:30',n:'Протеиновые панкейки',d:'2 яйца, 40г протеина, малина',k:450,p:38},{t:'11:00',n:'Хлебцы + творог',d:'3 хлебца, 80г',k:200,p:17},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:00',n:'Банан',d:'1 банан',k:100,p:1},{t:'19:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'20:00',n:'Говядина + гречка',d:'180г, 110г гречки',k:480,p:48},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],ЧТ:[{t:'08:30',n:'Яичница + авокадо',d:'3 яйца, ½ авокадо, ржаной',k:440,p:27},{t:'11:00',n:'Йогурт + миндаль',d:'150г, 20г',k:210,p:18},{t:'13:30',n:'Фасолевый суп + тунец',d:'300мл, ½ банки Rio Mare',k:450,p:36},{t:'16:30',n:'Хлебцы + авокадо',d:'3 хлебца, ½ авокадо',k:200,p:4},{t:'19:30',n:'Тунец в рассоле + кабачки',d:'1 банка',k:360,p:40},{t:'21:30',n:'Творог',d:'200г, корица',k:200,p:28}],ПТ:[{t:'08:30',n:'Банан перед залом',d:'1 банан',k:100,p:1},{t:'09:30',n:'Протеин после зала',d:'1 порция на воде — ~60 мин после тренировки',k:130,p:26},{t:'11:00',n:'Яйца + авокадо',d:'3 вкрутую, ½ авокадо',k:300,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 150г риса',k:490,p:38},{t:'16:30',n:'Хлебцы + творог',d:'3 хлебца, 80г',k:190,p:16},{t:'19:30',n:'Лосось + шпинат',d:'180г, тушёный шпинат',k:410,p:44},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:230,p:30}],СБ:[{t:'08:00',n:'Банан + кофе',d:'1 банан, чёрный кофе',k:100,p:1},{t:'10:00',n:'Протеин после бега',d:'1 порция на воде — ~30 мин после пробежки',k:130,p:26},{t:'11:00',n:'Авокадо-тост + яйца',d:'Цельнозерн. тост, ½ авокадо, 2 яйца',k:320,p:20},{t:'13:30',n:'Тунец Rio Mare + рис',d:'1 банка, 120г риса',k:460,p:36},{t:'16:30',n:'Греческий йогурт + ягоды',d:'200г, малина/черника',k:190,p:18},{t:'19:30',n:'Рёбрышки + брокколи',d:'220г рёбер, кукуруза 50г',k:530,p:40},{t:'21:30',n:'Творог',d:'200г, корица',k:190,p:28}],ВС:[{t:'08:30',n:'Яйца + тост + авокадо',d:'3 яйца, ½ авокадо, ржаной',k:460,p:26},{t:'13:00',n:'Рёбрышки + гречка',d:'250г, 120г гречки, кукуруза',k:650,p:44},{t:'16:00',n:'Орехи + яблоко',d:'Грецкие орехи 25г',k:210,p:6},{t:'19:30',n:'Тунец в рассоле + салат',d:'1 банка, руккола',k:320,p:38},{t:'21:30',n:'Творог + Zott Pudding',d:'150г + ½ пудинга',k:250,p:31}]}};
+
+const G={1:{"🥩 Мясо и рыба":{c:{bg:"#fff5f3",br:"#fdd5cb",d:"#e05a35"},i:[{n:"Тунец Rio Mare",q:"4 банки",nt:"ПН, СР, ПТ, СБ — по 1 банке"},{n:"Тунец Rio Mare (суп)",q:"1 банка",nt:"ЧТ — ½ банки в суп"},{n:"Тунец в рассоле",q:"2 банки",nt:"ЧТ ужин + ВС ужин"},{n:"Куриная грудка",q:"400г",nt:"ВТ 200г + ПТ 200г"},{n:"Лосось",q:"330г",nt:"СР 150г + СБ 180г"},{n:"Рёбрышки свиные",q:"250г",nt:"ВС обед"}]},"🥚 Яйца и молочка":{c:{bg:"#fffdf0",br:"#fde98a",d:"#c9a800"},i:[{n:"Яйца",q:"20 шт",nt:"3+3+2+3+3+2+3 = 19 шт"},{n:"Творог",q:"1200г",nt:"Казеин каждый день 150–200г"},{n:"Zott Pudding",q:"2 шт",nt:"ПН, СР, ПТ, ВС по ½ = 2 целых"},{n:"Греческий йогурт",q:"550г",nt:"ВТ 200г + ЧТ 150г + СБ 200г"}]},"🌾 Крупы и хлеб":{c:{bg:"#f5f0e8",br:"#e0cfa8",d:"#8a6d3b"},i:[{n:"Овсянка",q:"60г",nt:"ПН завтрак"},{n:"Рис",q:"420г",nt:"ПН 150г + ПТ 150г + СБ 120г"},{n:"Гречка",q:"220г",nt:"ПН 120г + СР 100г"},{n:"Булгур",q:"120г",nt:"ВТ 120г"},{n:"Хлебцы",q:"1 пачка",nt:"ПН+СР+ЧТ+ПТ"},{n:"Хлеб ржаной",q:"1 буханка",nt:"ВТ + ВС тост"}]},"🥑 Овощи и фрукты":{c:{bg:"#f0faf4",br:"#b6e8c8",d:"#1a9e5c"},i:[{n:"Авокадо",q:"3 шт",nt:"ВТ, ЧТ, ПТ, СБ, ВС — по ½"},{n:"Бананы",q:"2 шт",nt:"ПН пред-трен + СБ до бега"},{n:"Яблоки",q:"2 шт",nt:"ПН + ВС перекус"},{n:"Шпинат",q:"150г",nt:"ВТ гарнир + ЧТ омлет"},{n:"Брокколи",q:"250г",nt:"СБ ужин"},{n:"Цуккини",q:"1 шт",nt:"СБ гарнир"},{n:"Кабачок",q:"2 шт",nt:"ЧТ овощи + ВС гарнир"},{n:"Перец болгарский",q:"1 шт",nt:"ВС ужин"},{n:"Огурец",q:"1 шт",nt:"ПН обед"},{n:"Ягоды",q:"150г",nt:"ВТ йогурт + СБ йогурт"}]},"🥜 Орехи и масла":{c:{bg:"#fdf6ee",br:"#f0d9b0",d:"#b07d2e"},i:[{n:"Миндаль",q:"25г",nt:"ПН перекус"},{n:"Грецкие орехи",q:"25г",nt:"ЧТ йогурт + ВС перекус"},{n:"Арахисовое масло",q:"маленькая банка",nt:"ПН хлебцы"},{n:"Семена чиа",q:"маленький пакет",nt:"ВТ йогурт"},{n:"Мёд",q:"баночка",nt:"ВТ казеин + ЧТ йогурт"}]},"💪 Спорт":{c:{bg:"#eef4ff",br:"#bcd4f7",d:"#2d6be4"},i:[{n:"Протеин сывороточный",q:"4 порции",nt:"ПН + СР + ПТ + СБ"}]}},2:{"🥩 Мясо и рыба":{c:{bg:"#fff5f3",br:"#fdd5cb",d:"#e05a35"},i:[{n:"Тунец Rio Mare",q:"4 банки",nt:"ПН, СР, ПТ, СБ — по 1 банке"},{n:"Тунец Rio Mare (суп)",q:"1 банка",nt:"ЧТ — ½ банки в суп"},{n:"Тунец в рассоле",q:"2 банки",nt:"ЧТ ужин + ВС ужин"},{n:"Куриная грудка",q:"400г",nt:"ПН 200г + ПТ 200г"},{n:"Лосось",q:"180г",nt:"ВТ 180г"},{n:"Говядина постная",q:"180г",nt:"СР ужин"},{n:"Рёбрышки свиные",q:"470г",nt:"СБ 220г + ВС 250г"}]},"🥚 Яйца и молочка":{c:{bg:"#fffdf0",br:"#fde98a",d:"#c9a800"},i:[{n:"Яйца",q:"20 шт",nt:"3+3+2+3+3+2+3 = 19 шт"},{n:"Творог",q:"1200г",nt:"Казеин каждый день 150–200г"},{n:"Zott Pudding",q:"2 шт",nt:"ПН, СР, ПТ, ВС по ½ = 2 целых"},{n:"Греческий йогурт",q:"550г",nt:"ВТ 200г + ЧТ 150г + СБ 200г"}]},"🌾 Крупы и хлеб":{c:{bg:"#f5f0e8",br:"#e0cfa8",d:"#8a6d3b"},i:[{n:"Овсянка",q:"60г",nt:"ПН завтрак"},{n:"Рис",q:"420г",nt:"ВТ 150г + ПТ 150г + СБ 120г"},{n:"Гречка",q:"100г",nt:"СР ужин 100г"},{n:"Булгур",q:"120г",nt:"ПН обед 120г"},{n:"Хлебцы",q:"1 пачка",nt:"ПН+ЧТ+ПТ"},{n:"Хлеб ржаной",q:"1 буханка",nt:"ЧТ тост + ВС тост"}]},"🥑 Овощи и фрукты":{c:{bg:"#f0faf4",br:"#b6e8c8",d:"#1a9e5c"},i:[{n:"Авокадо",q:"3 шт",nt:"ВТ, ЧТ, ПТ, СБ, ВС — по ½"},{n:"Бананы",q:"2 шт",nt:"ПН пред-трен + СБ до бега"},{n:"Яблоки",q:"3 шт",nt:"ВТ, ЧТ, ПТ перекусы"},{n:"Груша",q:"1 шт",nt:"ВС перекус"},{n:"Шпинат",q:"100г",nt:"ПТ шпинат тушёный"},{n:"Брокколи",q:"250г",nt:"ВТ ужин"},{n:"Кабачок",q:"2 шт",nt:"ЧТ + ВС ужин"},{n:"Кукуруза",q:"1 банка маленькая",nt:"СБ рёбрышки 50г"},{n:"Черника / ягоды",q:"200г",nt:"ВТ 100г + СБ 100г"}]},"🥜 Орехи и масла":{c:{bg:"#fdf6ee",br:"#f0d9b0",d:"#b07d2e"},i:[{n:"Кешью",q:"20г",nt:"ПН перекус"},{n:"Миндаль",q:"15г",nt:"ЧТ йогурт"},{n:"Грецкие орехи",q:"25г",nt:"ВТ перекус + ВС творог"},{n:"Мёд",q:"баночка",nt:"СБ йогурт + ВС творог"}]},"💪 Спорт":{c:{bg:"#eef4ff",br:"#bcd4f7",d:"#2d6be4"},i:[{n:"Протеин сывороточный",q:"4 порции",nt:"ПН + СР + ПТ + СБ"}]}},3:{"🥩 Мясо и рыба":{c:{bg:"#fff5f3",br:"#fdd5cb",d:"#e05a35"},i:[{n:"Тунец Rio Mare",q:"4 банки",nt:"ПН, СР, ПТ, СБ — по 1 банке"},{n:"Тунец Rio Mare (суп)",q:"1 банка",nt:"ЧТ — ½ банки в суп"},{n:"Тунец в рассоле",q:"2 банки",nt:"ЧТ ужин + ВС ужин"},{n:"Куриная грудка",q:"400г",nt:"ПН 200г + ПТ 200г"},{n:"Лосось",q:"360г",nt:"ВТ 180г + СБ 180г"},{n:"Говядина постная",q:"180г",nt:"СР ужин"},{n:"Рёбрышки свиные",q:"250г",nt:"ВС обед"}]},"🥚 Яйца и молочка":{c:{bg:"#fffdf0",br:"#fde98a",d:"#c9a800"},i:[{n:"Яйца",q:"20 шт",nt:"3+3+2+3+3+2+3 = 19 шт"},{n:"Творог",q:"1200г",nt:"Казеин каждый день 150–200г"},{n:"Zott Pudding",q:"2 шт",nt:"ПН, СР, ПТ, ВС по ½ = 2 целых"},{n:"Греческий йогурт",q:"550г",nt:"ВТ 200г + ЧТ 150г + СБ 200г"}]},"🌾 Крупы и хлеб":{c:{bg:"#f5f0e8",br:"#e0cfa8",d:"#8a6d3b"},i:[{n:"Овсянка",q:"60г",nt:"ПН завтрак"},{n:"Рис",q:"300г",nt:"СР 150г + ПТ 150г"},{n:"Гречка",q:"230г",nt:"ПН 120г + СР 110г"},{n:"Булгур",q:"240г",nt:"ВТ 120г + СБ 120г"},{n:"Хлебцы",q:"1 пачка",nt:"ПН+ЧТ+ПТ"},{n:"Хлеб ржаной",q:"1 буханка",nt:"ВТ завтрак + ВС тост"}]},"🥑 Овощи и фрукты":{c:{bg:"#f0faf4",br:"#b6e8c8",d:"#1a9e5c"},i:[{n:"Авокадо",q:"3 шт",nt:"ВТ, ЧТ, ПТ, СБ, ВС — по ½"},{n:"Бананы",q:"2 шт",nt:"ПН пред-трен + СБ до бега"},{n:"Яблоки",q:"3 шт",nt:"ВТ, ЧТ, ВС перекусы"},{n:"Малина",q:"150г",nt:"ПН 50г + СБ 100г"},{n:"Черника",q:"50г",nt:"ВТ йогурт"},{n:"Цуккини",q:"2 шт",nt:"ВТ ужин + СБ овощи"},{n:"Брокколи",q:"250г",nt:"СБ запечённые"},{n:"Шпинат",q:"150г",nt:"СР гречка + ПТ ужин"},{n:"Баклажан",q:"1 шт",nt:"ЧТ ужин"},{n:"Перец болгарский",q:"1 шт",nt:"ЧТ гарнир"},{n:"Листовой салат",q:"1 пакет",nt:"ВС ужин"}]},"🥜 Орехи и масла":{c:{bg:"#fdf6ee",br:"#f0d9b0",d:"#b07d2e"},i:[{n:"Миндаль",q:"40г",nt:"ПН 20г + ПТ 20г"},{n:"Грецкие орехи",q:"55г",nt:"ВТ 15г + ЧТ + ВС 25г"},{n:"Кешью",q:"15г",nt:"ЧТ перекус"},{n:"Мёд",q:"баночка",nt:"ВТ казеин + СР панкейки"}]},"💪 Спорт":{c:{bg:"#eef4ff",br:"#bcd4f7",d:"#2d6be4"},i:[{n:"Протеин сывороточный",q:"4 порции",nt:"ПН + СР + ПТ + СБ"}]}},4:{"🥩 Мясо и рыба":{c:{bg:"#fff5f3",br:"#fdd5cb",d:"#e05a35"},i:[{n:"Тунец Rio Mare",q:"4 банки",nt:"ПН, СР, ПТ, СБ — по 1 банке"},{n:"Тунец Rio Mare (суп)",q:"1 банка",nt:"ЧТ — ½ банки в фасолевый суп"},{n:"Тунец в рассоле",q:"2 банки",nt:"ЧТ ужин + ВС ужин"},{n:"Куриная грудка",q:"200г",nt:"ВТ ужин"},{n:"Лосось",q:"360г",nt:"ПН 180г + ПТ 180г"},{n:"Говядина постная",q:"180г",nt:"СР ужин"},{n:"Рёбрышки свиные",q:"470г",nt:"СБ 220г + ВС 250г"}]},"🥚 Яйца и молочка":{c:{bg:"#fffdf0",br:"#fde98a",d:"#c9a800"},i:[{n:"Яйца",q:"20 шт",nt:"3+3+2+3+3+2+3 = 19 шт"},{n:"Творог",q:"1200г",nt:"Казеин каждый день 150–200г"},{n:"Zott Pudding",q:"2 шт",nt:"ПН, СР, ПТ, ВС по ½ = 2 целых"},{n:"Греческий йогурт",q:"550г",nt:"ВТ 200г + ЧТ 150г + СБ 200г"}]},"🌾 Крупы и хлеб":{c:{bg:"#f5f0e8",br:"#e0cfa8",d:"#8a6d3b"},i:[{n:"Овсянка",q:"60г",nt:"ПН завтрак"},{n:"Рис",q:"540г",nt:"ПН 120г + СР 150г + ПТ 150г + СБ 120г"},{n:"Гречка",q:"230г",nt:"ВТ 120г + СР 110г"},{n:"Хлебцы",q:"1 пачка",nt:"ПН+ЧТ+ПТ"},{n:"Хлеб ржаной",q:"1 буханка",nt:"ЧТ тост + ВС тост"}]},"🥑 Овощи и фрукты":{c:{bg:"#f0faf4",br:"#b6e8c8",d:"#1a9e5c"},i:[{n:"Авокадо",q:"3 шт",nt:"ПН, ВТ, ЧТ, ПТ, СБ, ВС — по ½"},{n:"Бананы",q:"2 шт",nt:"СР пред-трен + СБ до бега"},{n:"Яблоки",q:"3 шт",nt:"ВТ, ЧТ, ВС перекусы"},{n:"Черника / малина",q:"150г",nt:"ВТ 50г + СБ 100г"},{n:"Шпинат",q:"200г",nt:"ПН ужин + ПТ ужин"},{n:"Брокколи",q:"200г",nt:"СБ ужин"},{n:"Кабачок",q:"1 шт",nt:"ЧТ ужин"},{n:"Баклажан",q:"1 шт",nt:"ВТ гарнир"},{n:"Перец болгарский",q:"1 шт",nt:"ВТ гарнир"},{n:"Руккола / салат",q:"1 пакет",nt:"ВС ужин"},{n:"Кукуруза",q:"1 банка маленькая",nt:"СБ рёбрышки 50г"}]},"🥜 Орехи и масла":{c:{bg:"#fdf6ee",br:"#f0d9b0",d:"#b07d2e"},i:[{n:"Миндаль",q:"20г",nt:"ПН перекус"},{n:"Грецкие орехи",q:"60г",nt:"ВТ 15г + ЧТ 20г + ВС 25г"},{n:"Корица",q:"1 пачка",nt:"Творог ежедневно"},{n:"Мёд",q:"баночка",nt:"ВТ казеин + СБ йогурт"}]},"💪 Спорт":{c:{bg:"#eef4ff",br:"#bcd4f7",d:"#2d6be4"},i:[{n:"Протеин сывороточный",q:"4 порции",nt:"ПН + СР + ПТ + СБ"}]}}};
+
+// ── STATE ──
+let mW=1, gW=1;
+
+// Load from localStorage or start empty
+function loadState(){
+  try {
+    const me = localStorage.getItem('mEaten');
+    const gc = localStorage.getItem('gChecked');
+    return {
+      mEaten: me ? JSON.parse(me) : {},
+      gChecked: gc ? JSON.parse(gc) : {}
+    };
+  } catch(e) { return {mEaten:{}, gChecked:{}}; }
+}
+function saveEaten(){ try{ localStorage.setItem('mEaten', JSON.stringify(mEaten)); }catch(e){} }
+function saveChecked(){ try{ localStorage.setItem('gChecked', JSON.stringify(gChecked)); }catch(e){} }
+
+const _s = loadState();
+let mEaten = _s.mEaten;
+let gChecked = _s.gChecked;
+
+const CHECK_SVG = `<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// ── MEAL TABS ──
+function rMT(){
+  const c=document.getElementById('meal-tabs');c.innerHTML='';
+  for(let w=1;w<=4;w++){
+    const b=document.createElement('button');
+    b.className='wtab'+(w===mW?' active':'');
+    b.textContent='Нед '+w;
+    b.onclick=()=>{mW=w;rM();rMT();};
+    c.appendChild(b);
+  }
+}
+
+// ── MEAL RENDER ──
+function rM(){
+  const main=document.getElementById('meal-main');
+  main.innerHTML='';
+  const wd=M[mW];
+
+  // Count total eaten for subtitle
+  let totalMeals=0, totalEaten=0;
+  DAYS.forEach(day=>{
+    const ms=wd[day]||[];
+    totalMeals+=ms.length;
+    ms.forEach((_,i)=>{ if(mEaten[mW+'-'+day+'-'+i]) totalEaten++; });
+  });
+  document.getElementById('meal-sub').textContent=`Кирилл · 46 л · Братислава · ${totalEaten}/${totalMeals} съедено`;
+
+  DAYS.forEach(day=>{
+    const tp=DAY_TYPE[day];
+    const c=DC[tp];
+    const wi=WORKOUT[day];
+    const ms=wd[day]||[];
+    const tk=ms.reduce((s,m)=>s+m.k,0);
+    const tp2=ms.reduce((s,m)=>s+m.p,0);
+    const dayEaten=ms.filter((_,i)=>mEaten[mW+'-'+day+'-'+i]).length;
+
+    const row=document.createElement('div');
+    row.className='day-row';
+
+    // Day label
+    const dl=document.createElement('div');
+    dl.className='day-label';
+    dl.innerHTML=`<div class="day-name" style="color:${c.a}">${day}</div><div class="day-badge" style="background:${c.b};color:${c.a}">${DAY_BADGE[tp]}</div>`;
+    row.appendChild(dl);
+
+    const right=document.createElement('div');
+
+    // Total row with dots
+    const tot=document.createElement('div');
+    tot.className='day-total';
+    tot.style.display='flex';
+    tot.style.alignItems='center';
+    tot.style.flexWrap='wrap';
+    tot.style.gap='4px';
+    const dotsHtml=ms.map((_,i)=>`<div class="dp-dot${mEaten[mW+'-'+day+'-'+i]?' on':''}"></div>`).join('');
+    tot.innerHTML=`<span><strong>${tk} ккал</strong> · <span style="color:#e05a35">${tp2}г белка</span> · <em>${wi.icon} ${wi.text}</em></span><div class="day-progress">${dotsHtml}</div>`;
+    right.appendChild(tot);
+
+    // Meal cards
+    const strip=document.createElement('div');
+    strip.className='meals-strip';
+    ms.forEach((m,i)=>{
+      const sl=SL[m.t]||m.t;
+      const ic=MI[sl]||'🍴';
+      const isP=m.n.includes('Протеин')||m.n.includes('протеин');
+      const key=mW+'-'+day+'-'+i;
+      const eaten=!!mEaten[key];
+
+      const card=document.createElement('div');
+      card.className='meal-card'+(isP?' protein':'')+(eaten?' eaten':'');
+      card.innerHTML=`
+        <div class="mc-check">${eaten?CHECK_SVG:''}</div>
+        <div class="mc-time${isP?' blue':''}">${m.t}</div>
+        <div class="mc-slot">${sl}</div>
+        <span class="mc-icon">${ic}</span>
+        <div class="mc-name">${m.n}</div>
+        <div class="mc-detail">${m.d}</div>
+        <div class="mc-chips">
+          <span class="chip chip-kcal">${m.k} ккал</span>
+          <span class="chip chip-prot">${m.p}г б</span>
+        </div>`;
+      card.onclick=()=>{ mEaten[key]=!mEaten[key]; saveEaten(); rM(); };
+      strip.appendChild(card);
+    });
+    right.appendChild(strip);
+    row.appendChild(right);
+    main.appendChild(row);
+
+    const dv=document.createElement('div');
+    dv.className='divider';
+    main.appendChild(dv);
+  });
+}
+
+// ── GROCERY TABS ──
+function rGT(){
+  const c=document.getElementById('grocery-tabs');c.innerHTML='';
+  for(let w=1;w<=4;w++){
+    const b=document.createElement('button');
+    b.className='wtab'+(w===gW?' active':'');
+    b.textContent='Нед '+w;
+    b.onclick=()=>{gW=w;rG();rGT();};
+    c.appendChild(b);
+  }
+}
+
+// ── GROCERY RENDER ──
+function rG(){
+  const main=document.getElementById('grocery-main');
+  main.innerHTML='';
+  const data=G[gW];
+  let tot=0;
+  Object.values(data).forEach(cat=>tot+=cat.i.length);
+  const done=Object.values(gChecked).filter(Boolean).length;
+  const pct=tot?Math.round(done/tot*100):0;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('grocery-sub').textContent=`Кирилл · Братислава · ${done}/${tot} куплено · ${pct}%`;
+
+  let gi=0;
+  Object.entries(data).forEach(([cat,{c,i}])=>{
+    const sec=document.createElement('div');
+    const tit=document.createElement('div');
+    tit.className='g-cat-title';
+    tit.textContent=cat;
+    sec.appendChild(tit);
+    const box=document.createElement('div');
+    box.className='g-cat-box';
+    box.style.background=c.bg;
+    box.style.border=`1.5px solid ${c.br}`;
+    i.forEach(item=>{
+      const key=gW+'-'+gi;
+      const done2=!!gChecked[key];
+      const ck=key;
+      const row=document.createElement('div');
+      row.className='g-row'+(done2?' done':'');
+      row.innerHTML=`<div class="check-box${done2?' on':''}">${done2?CHECK_SVG:''}</div><div class="g-dot" style="background:${c.d}"></div><div class="g-info"><div class="g-name" style="${done2?'text-decoration:line-through;color:#aaa':''}">${item.n}</div><div class="g-note">${item.nt}</div></div><div class="g-qty" style="color:${done2?'#bbb':c.d}">${item.q}</div>`;
+      row.onclick=()=>{gChecked[ck]=!gChecked[ck]; saveChecked(); rG();};
+      box.appendChild(row);
+      gi++;
+    });
+    sec.appendChild(box);
+    main.appendChild(sec);
+  });
+}
+
+// ── INIT ──
+rMT(); rM(); rGT(); rG();
+</script>
+</body>
+</html>
